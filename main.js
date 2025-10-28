@@ -3,6 +3,8 @@ import { WebContainer } from '@webcontainer/api';
 import { files } from './files';
 import { ErrorHandler } from './src/utils/errorHandler.js';
 import { debounce } from './src/utils/debounce.js';
+import { LoadingSpinner } from './src/components/LoadingSpinner.js';
+import { Terminal } from './src/components/Terminal.js';
 
 /** @type {import('@webcontainer/api').WebContainer}  */
 let webcontainerInstance;
@@ -13,13 +15,30 @@ let iframeEl = null;
 /** @type {HTMLTextAreaElement | null} */
 let textareaEl = null;
 
+/** @type {Terminal | null} */
+let terminal = null;
+
 // Initialize error handler
 ErrorHandler.init();
 
 window.addEventListener('load', async () => {
+  // Create loading spinner
+  const spinner = new LoadingSpinner(document.body);
+
   try {
+    // Show initial loading
+    spinner.show('Initializing application...');
+
     // Initialize DOM first
     initializeUI();
+
+    // Initialize Terminal
+    const terminalContainer = document.querySelector('#terminal-container');
+    if (terminalContainer) {
+      terminal = new Terminal(terminalContainer);
+      terminal.init();
+      terminal.writeLine('WebContainer Terminal initialized', 'success');
+    }
 
     // Get DOM elements after UI is created
     iframeEl = document.querySelector('iframe');
@@ -43,37 +62,55 @@ window.addEventListener('load', async () => {
       debouncedWrite(e.currentTarget.value);
     });
 
-    ErrorHandler.showInfo('Booting WebContainer...', 'Initialization');
+    // Boot WebContainer
+    spinner.updateMessage('Booting WebContainer...');
+    spinner.setProgress(20);
 
-    // Call only once
     webcontainerInstance = await WebContainer.boot();
     await webcontainerInstance.mount(files);
 
-    ErrorHandler.showInfo('Installing dependencies...', 'Setup');
+    // Install dependencies
+    spinner.updateMessage('Installing dependencies...');
+    spinner.setProgress(50);
 
     const exitCode = await installDependencies();
     if (exitCode !== 0) {
       throw new Error('Installation failed with exit code: ' + exitCode);
     }
 
-    ErrorHandler.showInfo('Starting dev server...', 'Setup');
+    // Start dev server
+    spinner.updateMessage('Starting development server...');
+    spinner.setProgress(80);
 
     await startDevServer();
 
-    ErrorHandler.showSuccess('Application ready!', 'Success');
+    // Complete
+    spinner.setProgress(100);
+    spinner.updateMessage('Application ready!');
+
+    // Hide spinner after brief delay
+    setTimeout(() => {
+      spinner.hide();
+      ErrorHandler.showSuccess('WebContainer application is ready!', 'Success');
+    }, 500);
+
   } catch (error) {
+    spinner.hide();
     await ErrorHandler.handle(error, 'Application Initialization');
   }
 });
 
 async function installDependencies() {
   try {
+    terminal?.writeCommand('npm install');
+
     // Install dependencies
     const installProcess = await webcontainerInstance.spawn('npm', ['install']);
 
     installProcess.output.pipeTo(new WritableStream({
       write(data) {
         console.log(data);
+        terminal?.writeLine(data, 'info');
       }
     }));
 
@@ -81,9 +118,11 @@ async function installDependencies() {
     const exitCode = await installProcess.exit;
 
     if (exitCode !== 0) {
+      terminal?.writeLine(`npm install failed with exit code ${exitCode}`, 'error');
       throw new Error(`npm install failed with exit code ${exitCode}`);
     }
 
+    terminal?.writeLine('Dependencies installed successfully', 'success');
     return exitCode;
   } catch (error) {
     await ErrorHandler.handle(error, 'Install Dependencies');
@@ -93,6 +132,8 @@ async function installDependencies() {
 
 async function startDevServer() {
   try {
+    terminal?.writeCommand('npm run start');
+
     // Run `npm run start` to start the Express app
     const serverProcess = await webcontainerInstance.spawn('npm', ['run', 'start']);
 
@@ -100,12 +141,15 @@ async function startDevServer() {
     serverProcess.output.pipeTo(new WritableStream({
       write(data) {
         console.log('[Server]', data);
+        terminal?.writeLine(data, 'info');
       }
     }));
 
     // Wait for `server-ready` event
     webcontainerInstance.on('server-ready', (port, url) => {
       console.log(`Server ready at ${url}`);
+      terminal?.writeLine(`Server ready at ${url}`, 'success');
+      terminal?.writeLine(`Preview available in iframe`, 'info');
       iframeEl.src = url;
     });
 
@@ -144,6 +188,7 @@ function initializeUI() {
       <div class="preview">
         <iframe src="loading.html"></iframe>
       </div>
+      <div class="terminal-wrapper" id="terminal-container"></div>
     </div>
   `;
 }
