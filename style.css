@@ -51,20 +51,25 @@ textarea {
 
 .container {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 200px 1fr 1fr;
   grid-template-rows: 1fr auto;
   gap: 1rem;
   height: calc(100vh - 200px);
   width: 100%;
 }
 
-.editor {
+.file-tree-wrapper {
   grid-column: 1;
   grid-row: 1;
 }
 
-.preview {
+.editor {
   grid-column: 2;
+  grid-row: 1;
+}
+
+.preview {
+  grid-column: 3;
   grid-row: 1;
 }
 
@@ -546,4 +551,186 @@ textarea {
     opacity: 0.6;
     transform: scale(1.1);
   }
+}
+
+/* File Tree Styles */
+.file-tree {
+  display: flex;
+  flex-direction: column;
+  background: #f5f5f5;
+  border-radius: 6px;
+  overflow: hidden;
+  height: 100%;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.file-tree-header {
+  background: #e0e0e0;
+  padding: 10px 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #ccc;
+  user-select: none;
+}
+
+.file-tree-title {
+  font-weight: 600;
+  font-size: 0.9em;
+  color: #333;
+}
+
+.file-tree-btn {
+  background: rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+  padding: 4px 8px;
+  cursor: pointer;
+  font-size: 0.9em;
+  transition: all 0.2s;
+}
+
+.file-tree-btn:hover {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.file-tree-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px;
+}
+
+.file-tree-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 8px;
+  margin: 2px 0;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.2s;
+  user-select: none;
+}
+
+.file-tree-item:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.file-tree-item.active {
+  background: #007acc;
+  color: white;
+}
+
+.file-tree-item.active .file-tree-icon,
+.file-tree-item.active .file-tree-name {
+  color: white;
+}
+
+.file-tree-item-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.file-tree-icon {
+  font-size: 1.1em;
+  flex-shrink: 0;
+}
+
+.file-tree-name {
+  font-size: 0.9em;
+  color: #333;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-tree-actions {
+  display: none;
+  gap: 4px;
+}
+
+.file-tree-item:hover .file-tree-actions {
+  display: flex;
+}
+
+.file-tree-action-btn {
+  background: rgba(0, 0, 0, 0.1);
+  border: none;
+  border-radius: 3px;
+  padding: 2px 6px;
+  cursor: pointer;
+  font-size: 0.85em;
+  transition: all 0.2s;
+}
+
+.file-tree-action-btn:hover {
+  background: rgba(0, 0, 0, 0.2);
+  transform: scale(1.1);
+}
+
+.file-tree-item.active .file-tree-action-btn {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.file-tree-item.active .file-tree-action-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* Context Menu */
+.file-tree-context-menu {
+  background: white;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  padding: 4px 0;
+  min-width: 160px;
+  z-index: 9999;
+  font-size: 0.9em;
+}
+
+.context-menu-item {
+  padding: 8px 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background 0.2s;
+}
+
+.context-menu-item:hover {
+  background: #f0f0f0;
+}
+
+.context-menu-danger {
+  color: #d00;
+}
+
+.context-menu-danger:hover {
+  background: #fee;
+}
+
+.context-menu-divider {
+  height: 1px;
+  background: #e0e0e0;
+  margin: 4px 0;
+}
+
+/* File tree scrollbar */
+.file-tree-body::-webkit-scrollbar {
+  width: 8px;
+}
+
+.file-tree-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.file-tree-body::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 4px;
+}
+
+.file-tree-body::-webkit-scrollbar-thumb:hover {
+  background: #999;
 }

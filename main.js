@@ -6,6 +6,7 @@ import { debounce } from './src/utils/debounce.js';
 import { LoadingSpinner } from './src/components/LoadingSpinner.js';
 import { Terminal } from './src/components/Terminal.js';
 import { StatusBar } from './src/components/StatusBar.js';
+import { FileTree } from './src/components/FileTree.js';
 
 /** @type {import('@webcontainer/api').WebContainer}  */
 let webcontainerInstance;
@@ -21,6 +22,9 @@ let terminal = null;
 
 /** @type {StatusBar | null} */
 let statusBar = null;
+
+/** @type {FileTree | null} */
+let fileTree = null;
 
 // Initialize error handler
 ErrorHandler.init();
@@ -40,6 +44,20 @@ window.addEventListener('load', async () => {
     statusBar = new StatusBar(document.body);
     statusBar.init();
     statusBar.setStatus('loading', 'Initializing...');
+
+    // Initialize FileTree
+    const fileTreeContainer = document.querySelector('#file-tree-container');
+    if (fileTreeContainer) {
+      fileTree = new FileTree(fileTreeContainer, {
+        files: files,
+        currentFile: 'index.js',
+        onFileSelect: (path) => handleFileSelect(path),
+        onFileCreate: (path, data) => handleFileCreate(path, data),
+        onFileDelete: (path) => handleFileDelete(path),
+        onFileRename: (oldPath, newPath) => handleFileRename(oldPath, newPath)
+      });
+      fileTree.init();
+    }
 
     // Initialize Terminal
     const terminalContainer = document.querySelector('#terminal-container');
@@ -209,6 +227,7 @@ function initializeUI() {
 
   appContainer.innerHTML = `
     <div class="container">
+      <div class="file-tree-wrapper" id="file-tree-container"></div>
       <div class="editor">
         <textarea>I am a textarea</textarea>
       </div>
@@ -218,4 +237,70 @@ function initializeUI() {
       <div class="terminal-wrapper" id="terminal-container"></div>
     </div>
   `;
+}
+
+/**
+ * Handle file selection from FileTree
+ * @param {string} path - Selected file path
+ */
+function handleFileSelect(path) {
+  console.log('File selected:', path);
+  statusBar?.setCurrentFile(path);
+
+  // Load file content into textarea
+  if (files[path] && files[path].file && files[path].file.contents) {
+    textareaEl.value = files[path].file.contents;
+  }
+}
+
+/**
+ * Handle new file creation
+ * @param {string} path - New file path
+ * @param {Object} data - File data
+ */
+async function handleFileCreate(path, data) {
+  console.log('File created:', path);
+  terminal?.writeLine(`Created file: ${path}`, 'success');
+
+  try {
+    await webcontainerInstance.fs.writeFile(`/${path}`, data.file.contents);
+    ErrorHandler.showSuccess(`File created: ${path}`, 'File System');
+  } catch (error) {
+    await ErrorHandler.handle(error, 'Create File');
+  }
+}
+
+/**
+ * Handle file deletion
+ * @param {string} path - File path to delete
+ */
+async function handleFileDelete(path) {
+  console.log('File deleted:', path);
+  terminal?.writeLine(`Deleted file: ${path}`, 'info');
+
+  try {
+    await webcontainerInstance.fs.rm(`/${path}`);
+    ErrorHandler.showSuccess(`File deleted: ${path}`, 'File System');
+  } catch (error) {
+    await ErrorHandler.handle(error, 'Delete File');
+  }
+}
+
+/**
+ * Handle file rename
+ * @param {string} oldPath - Old file path
+ * @param {string} newPath - New file path
+ */
+async function handleFileRename(oldPath, newPath) {
+  console.log('File renamed:', oldPath, '→', newPath);
+  terminal?.writeLine(`Renamed: ${oldPath} → ${newPath}`, 'info');
+
+  try {
+    const content = await webcontainerInstance.fs.readFile(`/${oldPath}`, 'utf-8');
+    await webcontainerInstance.fs.writeFile(`/${newPath}`, content);
+    await webcontainerInstance.fs.rm(`/${oldPath}`);
+    ErrorHandler.showSuccess(`File renamed to: ${newPath}`, 'File System');
+  } catch (error) {
+    await ErrorHandler.handle(error, 'Rename File');
+  }
 }
