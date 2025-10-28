@@ -427,3 +427,123 @@ textarea {
 .terminal-body::-webkit-scrollbar-thumb:hover {
   background: #666;
 }
+
+/* Status Bar Styles */
+.status-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 28px;
+  background: #007acc;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px;
+  font-size: 0.85em;
+  z-index: 100;
+  user-select: none;
+  box-shadow: 0 -1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.status-bar-section {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.status-bar-left {
+  flex: 1;
+}
+
+.status-bar-center {
+  flex: 1;
+  justify-content: center;
+}
+
+.status-bar-right {
+  flex: 1;
+  justify-content: flex-end;
+}
+
+.status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.1);
+  transition: background 0.3s;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #888;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.status-indicator[data-status="idle"] .status-dot {
+  background: #888;
+  animation: none;
+}
+
+.status-indicator[data-status="loading"] .status-dot,
+.status-indicator[data-status="booting"] .status-dot,
+.status-indicator[data-status="installing"] .status-dot,
+.status-indicator[data-status="starting"] .status-dot {
+  background: #ffa500;
+  animation: pulse 1s ease-in-out infinite;
+}
+
+.status-indicator[data-status="ready"] .status-dot {
+  background: #0f0;
+  animation: none;
+}
+
+.status-indicator[data-status="error"] .status-dot {
+  background: #f00;
+  animation: pulse 0.5s ease-in-out infinite;
+}
+
+.status-text {
+  font-weight: 500;
+}
+
+.status-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  cursor: default;
+}
+
+.status-item:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+}
+
+.status-icon {
+  font-size: 0.95em;
+}
+
+.status-value {
+  font-family: 'Courier New', monospace;
+}
+
+.status-file {
+  font-weight: 500;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(1.1);
+  }
+}

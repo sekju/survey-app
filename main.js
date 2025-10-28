@@ -5,6 +5,7 @@ import { ErrorHandler } from './src/utils/errorHandler.js';
 import { debounce } from './src/utils/debounce.js';
 import { LoadingSpinner } from './src/components/LoadingSpinner.js';
 import { Terminal } from './src/components/Terminal.js';
+import { StatusBar } from './src/components/StatusBar.js';
 
 /** @type {import('@webcontainer/api').WebContainer}  */
 let webcontainerInstance;
@@ -17,6 +18,9 @@ let textareaEl = null;
 
 /** @type {Terminal | null} */
 let terminal = null;
+
+/** @type {StatusBar | null} */
+let statusBar = null;
 
 // Initialize error handler
 ErrorHandler.init();
@@ -31,6 +35,11 @@ window.addEventListener('load', async () => {
 
     // Initialize DOM first
     initializeUI();
+
+    // Initialize StatusBar
+    statusBar = new StatusBar(document.body);
+    statusBar.init();
+    statusBar.setStatus('loading', 'Initializing...');
 
     // Initialize Terminal
     const terminalContainer = document.querySelector('#terminal-container');
@@ -65,28 +74,44 @@ window.addEventListener('load', async () => {
     // Boot WebContainer
     spinner.updateMessage('Booting WebContainer...');
     spinner.setProgress(20);
+    statusBar.setStatus('booting');
 
     webcontainerInstance = await WebContainer.boot();
     await webcontainerInstance.mount(files);
 
+    // Get Node version
+    const nodeVersionProcess = await webcontainerInstance.spawn('node', ['--version']);
+    let nodeVersion = '';
+    nodeVersionProcess.output.pipeTo(new WritableStream({
+      write(data) {
+        nodeVersion += data;
+      }
+    }));
+    await nodeVersionProcess.exit;
+    statusBar.setNodeVersion(nodeVersion.trim());
+
     // Install dependencies
     spinner.updateMessage('Installing dependencies...');
     spinner.setProgress(50);
+    statusBar.setStatus('installing');
 
     const exitCode = await installDependencies();
     if (exitCode !== 0) {
+      statusBar.setStatus('error', 'Installation failed');
       throw new Error('Installation failed with exit code: ' + exitCode);
     }
 
     // Start dev server
     spinner.updateMessage('Starting development server...');
     spinner.setProgress(80);
+    statusBar.setStatus('starting');
 
     await startDevServer();
 
     // Complete
     spinner.setProgress(100);
     spinner.updateMessage('Application ready!');
+    statusBar.setStatus('ready');
 
     // Hide spinner after brief delay
     setTimeout(() => {
@@ -96,6 +121,7 @@ window.addEventListener('load', async () => {
 
   } catch (error) {
     spinner.hide();
+    statusBar?.setStatus('error', 'Initialization failed');
     await ErrorHandler.handle(error, 'Application Initialization');
   }
 });
@@ -150,6 +176,7 @@ async function startDevServer() {
       console.log(`Server ready at ${url}`);
       terminal?.writeLine(`Server ready at ${url}`, 'success');
       terminal?.writeLine(`Preview available in iframe`, 'info');
+      statusBar?.setServerInfo(port, url);
       iframeEl.src = url;
     });
 
