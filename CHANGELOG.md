@@ -9,18 +9,114 @@ Format oparty na [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Planowane
-- CodeMirror 6 integration
-- Syntax highlighting (JavaScript)
-- Multi-file tabs
-- AppState management
 - Settings panel
 - Template gallery
+- Keyboard shortcuts
+- Search & Replace UI
+- Git integration
+- File upload/download
+
+---
+
+## [0.4.0] - 2025-10-29
+
+### Added - Phase 3 Complete ✅
+- **CodeMirror 6 Editor** (src/components/Editor.js - 213 lines)
+  - Professional code editor replacing textarea
+  - JavaScript syntax highlighting (@codemirror/lang-javascript)
+  - One Dark theme (@codemirror/theme-one-dark)
+  - Line numbers and gutters
+  - Code folding support
+  - Auto-indentation
+  - Bracket matching
+  - Search & replace (Ctrl+F)
+  - Multiple cursors
+  - getValue/setValue API
+  - Focus, read-only, cursor position APIs
+  - Full editor lifecycle management
+
+- **TabBar Component** (src/components/TabBar.js - 327 lines)
+  - Multi-file tab management
+  - Active tab highlighting (#007acc border)
+  - Unsaved changes indicator (• cyan dot)
+  - Close button (×) with dirty confirmation
+  - Max 10 tabs limit (configurable)
+  - File icons by extension
+  - Horizontal scroll for overflow
+  - Empty state message
+  - Click to switch between files
+  - XSS protection
+
+- **AppState System** (src/core/AppState.js - 475 lines)
+  - Centralized state management
+  - Event-driven architecture (pub/sub)
+  - File state management
+  - Tab state management
+  - Editor state tracking
+  - Server state tracking
+  - UI preferences storage
+  - Event system with 10+ events
+  - Subscribe/unsubscribe API
+  - State snapshots (getState)
+  - Statistics API (getStats)
+  - Reset functionality
+
+### Changed
+- **Layout Enhancement**
+  - Editor wrapped in flex column container
+  - TabBar placed above editor (36px height)
+  - Editor takes remaining height (flex: 1)
+  - Seamless integration with grid layout
+
+- **Main.js Integration**
+  - Imported and initialized AppState
+  - All file operations route through AppState
+  - Tab operations synchronized with AppState
+  - Editor onChange updates AppState
+  - Event listeners for debugging
+  - Initial files loaded into state on startup
+
+- **Dependencies Updated**
+  - Added codemirror ^6.0.1
+  - Added @codemirror/lang-javascript ^6.2.2
+  - Added @codemirror/theme-one-dark ^6.1.2
+  - Total: 18 new packages
+  - Still 0 vulnerabilities ✅
+
+### CSS
+- **CodeMirror Styles** (~60 lines)
+  - .editor-wrapper container styles
+  - .cm-editor height and font styling
+  - .cm-scroller overflow handling
+  - Custom scrollbar (#282c34 track)
+  - 14px Menlo/Monaco font
+
+- **TabBar Styles** (~130 lines)
+  - Dark theme (#2d2d2d background)
+  - Tab styling with hover effects
+  - Active tab highlighting
+  - Dirty indicator styling
+  - Close button animations
+  - Horizontal scroll
+  - Min/max width (100-200px)
+
+### Performance
+- Build time: 1.70s (up from 244ms due to CM6)
+- Bundle size: 537.67 kB (179.34 kB gzipped)
+- 47 modules transformed (was 45)
+- No performance issues observed
+- Memory efficient state management
+
+### Commits
+1. `28d9220` - CodeMirror 6 integration
+2. `83834cc` - TabBar multi-file tabs
+3. `7a6285d` - AppState management system
 
 ---
 
 ## [0.3.0] - 2025-10-28
 
-### Added - Phase 3 (Partial)
+### Added - Phase 3 (Partial - FileTree only)
 - **FileTree Component** (src/components/FileTree.js)
   - File browser with tree view (200px left panel)
   - File icons based on extension (📜 .js, 📋 .json, 🌐 .html, 🎨 .css, etc.)
@@ -204,24 +300,32 @@ Format oparty na [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## Statistics
 
-### Code Metrics
-- **Total JavaScript**: ~2200+ lines
-- **Total CSS**: ~900+ lines
-- **Components**: 6
+### Code Metrics (v0.4.0)
+- **Total JavaScript**: ~3700+ lines (was ~2200)
+- **Total CSS**: ~1100+ lines (was ~900)
+- **Components**: 9 (was 6)
+  - LoadingSpinner, Terminal, StatusBar (Phase 2)
+  - FileTree, Editor, TabBar (Phase 3)
+- **Core Modules**: 1
+  - AppState (Phase 3)
 - **Utilities**: 2
-- **Documentation**: ~2500+ lines
+  - ErrorHandler, debounce
+- **Documentation**: ~3000+ lines
 
 ### Files Created
-1. src/utils/errorHandler.js (195 lines)
-2. src/utils/debounce.js (89 lines)
-3. src/components/LoadingSpinner.js (122 lines)
-4. src/components/Terminal.js (226 lines)
-5. src/components/StatusBar.js (181 lines)
-6. src/components/FileTree.js (400+ lines)
-7. architecture.md (documentation)
-8. todo.md (plan)
-9. TEST_REPORT.md (tests)
-10. CHANGELOG.md (this file)
+1. src/utils/errorHandler.js (195 lines) - Phase 1
+2. src/utils/debounce.js (89 lines) - Phase 1
+3. src/components/LoadingSpinner.js (122 lines) - Phase 2
+4. src/components/Terminal.js (226 lines) - Phase 2
+5. src/components/StatusBar.js (181 lines) - Phase 2
+6. src/components/FileTree.js (400+ lines) - Phase 3
+7. src/components/Editor.js (213 lines) - Phase 3 ⭐
+8. src/components/TabBar.js (327 lines) - Phase 3 ⭐
+9. src/core/AppState.js (475 lines) - Phase 3 ⭐
+10. architecture.md (documentation)
+11. todo.md (plan)
+12. TEST_REPORT.md (tests)
+13. CHANGELOG.md (this file)
 
 ### Commits
 1. `b9c95bf` - Phase 1 complete (critical fixes)
@@ -229,12 +333,17 @@ Format oparty na [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 3. `c86d33b` - Phase 2 complete (Status Bar)
 4. `adac752` - Test report
 5. `4f25ccc` - Phase 3 partial (FileTree)
+6. `c3a23df` - Documentation update
+7. `28d9220` - CodeMirror 6 integration ⭐
+8. `83834cc` - TabBar multi-file tabs ⭐
+9. `7a6285d` - AppState management ⭐
 
 ### Time Invested
-- Phase 1: 3h
-- Phase 2: 5.5h
-- Phase 3: 1.5h (so far)
-- **Total**: 10h / 17.5h MVP (57% complete)
+- Phase 1: 3h (Critical Fixes)
+- Phase 2: 5.5h (UX Improvements)
+- Phase 3: 6h (File Manager & Editor)
+- Documentation: 1.5h
+- **Total**: 16h / 17.5h MVP (91% complete)
 
 ---
 
@@ -242,7 +351,8 @@ Format oparty na [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 | Version | Date | Phase | Status | Features |
 |---------|------|-------|--------|----------|
-| 0.3.0 | 2025-10-28 | Phase 3 | In Progress | FileTree, File Operations |
+| 0.4.0 | 2025-10-29 | Phase 3 | Complete ✅ | CodeMirror 6, Tabs, AppState |
+| 0.3.0 | 2025-10-28 | Phase 3 | Partial | FileTree, File Operations |
 | 0.2.0 | 2025-10-28 | Phase 2 | Complete | Loading, Terminal, StatusBar |
 | 0.1.0 | 2025-10-28 | Phase 1 | Complete | Error handling, Dependencies |
 | 0.0.0 | Initial | - | Base | Basic WebContainer demo |
