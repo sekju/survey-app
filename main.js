@@ -9,6 +9,7 @@ import { StatusBar } from './src/components/StatusBar.js';
 import { FileTree } from './src/components/FileTree.js';
 import { Editor } from './src/components/Editor.js';
 import { TabBar } from './src/components/TabBar.js';
+import { appState } from './src/core/AppState.js';
 
 /** @type {import('@webcontainer/api').WebContainer}  */
 let webcontainerInstance;
@@ -33,6 +34,19 @@ let fileTree = null;
 
 // Initialize error handler
 ErrorHandler.init();
+
+// Load initial files into AppState
+Object.keys(files).forEach(path => {
+  const content = files[path]?.file?.contents || '';
+  appState.loadFile(path, content);
+});
+
+// Subscribe to AppState events for debugging
+if (process.env.NODE_ENV === 'development') {
+  appState.on('state:changed', (data) => {
+    console.log('[AppState]', data.event, data.data);
+  });
+}
 
 window.addEventListener('load', async () => {
   // Create loading spinner
@@ -104,9 +118,14 @@ window.addEventListener('load', async () => {
       theme: 'oneDark',
       onChange: (content) => {
         debouncedWrite(content);
+
+        // Update AppState with editor content
+        appState.updateEditorContent(content);
+
         // Mark current tab as dirty
-        const activeTab = tabBar?.getActiveTab();
+        const activeTab = appState.getActiveTab();
         if (activeTab && content !== activeTab.content) {
+          appState.setTabDirty(activeTab.path, true);
           tabBar?.setTabDirty(activeTab.path, true);
         }
       }
@@ -114,7 +133,9 @@ window.addEventListener('load', async () => {
     editor.init();
 
     // Open initial tab for index.js
-    tabBar?.addTab('index.js', 'index.js', files['index.js'].file.contents);
+    const initialContent = files['index.js'].file.contents;
+    appState.openTab('index.js', 'index.js', initialContent);
+    tabBar?.addTab('index.js', 'index.js', initialContent);
 
     // Boot WebContainer
     spinner.updateMessage('Booting WebContainer...');
@@ -276,9 +297,13 @@ function handleFileSelect(path) {
 
   // Get file info
   const fileName = path.split('/').pop() || path;
-  const fileContent = files[path]?.file?.contents || '';
+  const file = appState.getFile(path);
+  const fileContent = file?.content || files[path]?.file?.contents || '';
 
-  // Add or switch to tab
+  // Open tab through AppState
+  appState.openTab(path, fileName, fileContent);
+
+  // Sync with TabBar component
   tabBar?.addTab(path, fileName, fileContent);
 }
 
@@ -289,6 +314,10 @@ function handleFileSelect(path) {
  */
 function handleTabChange(path, content) {
   console.log('Tab changed:', path);
+
+  // Switch tab in AppState
+  appState.switchTab(path);
+
   statusBar?.setCurrentFile(path);
 
   // Load content into editor
@@ -302,7 +331,12 @@ function handleTabChange(path, content) {
 function handleTabClose(path) {
   console.log('Tab closed:', path);
 
-  if (path === null) {
+  if (path) {
+    // Close tab in AppState
+    appState.closeTab(path);
+  }
+
+  if (path === null || appState.tabs.length === 0) {
     // All tabs closed - clear editor
     editor?.setValue('');
     statusBar?.setCurrentFile('');
@@ -319,7 +353,12 @@ async function handleFileCreate(path, data) {
   terminal?.writeLine(`Created file: ${path}`, 'success');
 
   try {
-    await webcontainerInstance.fs.writeFile(`/${path}`, data.file.contents);
+    const content = data.file.contents;
+    await webcontainerInstance.fs.writeFile(`/${path}`, content);
+
+    // Create file in AppState
+    appState.createFile(path, content);
+
     ErrorHandler.showSuccess(`File created: ${path}`, 'File System');
   } catch (error) {
     await ErrorHandler.handle(error, 'Create File');
@@ -336,6 +375,10 @@ async function handleFileDelete(path) {
 
   try {
     await webcontainerInstance.fs.rm(`/${path}`);
+
+    // Delete file from AppState (also closes associated tab)
+    appState.deleteFile(path);
+
     ErrorHandler.showSuccess(`File deleted: ${path}`, 'File System');
   } catch (error) {
     await ErrorHandler.handle(error, 'Delete File');
@@ -355,6 +398,15 @@ async function handleFileRename(oldPath, newPath) {
     const content = await webcontainerInstance.fs.readFile(`/${oldPath}`, 'utf-8');
     await webcontainerInstance.fs.writeFile(`/${newPath}`, content);
     await webcontainerInstance.fs.rm(`/${oldPath}`);
+
+    // Rename file in AppState (also updates tabs)
+    appState.renameFile(oldPath, newPath);
+
+    // Update status bar if this was the active file
+    if (appState.activeTabPath === newPath) {
+      statusBar?.setCurrentFile(newPath);
+    }
+
     ErrorHandler.showSuccess(`File renamed to: ${newPath}`, 'File System');
   } catch (error) {
     await ErrorHandler.handle(error, 'Rename File');
