@@ -7,6 +7,7 @@ import { LoadingSpinner } from './src/components/LoadingSpinner.js';
 import { Terminal } from './src/components/Terminal.js';
 import { StatusBar } from './src/components/StatusBar.js';
 import { FileTree } from './src/components/FileTree.js';
+import { Editor } from './src/components/Editor.js';
 
 /** @type {import('@webcontainer/api').WebContainer}  */
 let webcontainerInstance;
@@ -14,8 +15,8 @@ let webcontainerInstance;
 /** @type {HTMLIFrameElement | null} */
 let iframeEl = null;
 
-/** @type {HTMLTextAreaElement | null} */
-let textareaEl = null;
+/** @type {Editor | null} */
+let editor = null;
 
 /** @type {Terminal | null} */
 let terminal = null;
@@ -69,25 +70,28 @@ window.addEventListener('load', async () => {
 
     // Get DOM elements after UI is created
     iframeEl = document.querySelector('iframe');
-    textareaEl = document.querySelector('textarea');
+    const editorContainer = document.querySelector('.editor');
 
     // Validate DOM elements exist
-    if (!textareaEl || !iframeEl) {
+    if (!editorContainer || !iframeEl) {
       throw new Error('Required DOM elements not found');
     }
-
-    // Set initial content
-    textareaEl.value = files['index.js'].file.contents;
 
     // Create debounced write function (300ms delay)
     const debouncedWrite = debounce((content) => {
       writeIndexJS(content);
     }, 300);
 
-    // Attach event listeners with debounce
-    textareaEl.addEventListener('input', (e) => {
-      debouncedWrite(e.currentTarget.value);
+    // Initialize CodeMirror Editor
+    editor = new Editor(editorContainer, {
+      content: files['index.js'].file.contents,
+      language: 'javascript',
+      theme: 'oneDark',
+      onChange: (content) => {
+        debouncedWrite(content);
+      }
     });
+    editor.init();
 
     // Boot WebContainer
     spinner.updateMessage('Booting WebContainer...');
@@ -228,9 +232,7 @@ function initializeUI() {
   appContainer.innerHTML = `
     <div class="container">
       <div class="file-tree-wrapper" id="file-tree-container"></div>
-      <div class="editor">
-        <textarea>I am a textarea</textarea>
-      </div>
+      <div class="editor"></div>
       <div class="preview">
         <iframe src="loading.html"></iframe>
       </div>
@@ -247,9 +249,9 @@ function handleFileSelect(path) {
   console.log('File selected:', path);
   statusBar?.setCurrentFile(path);
 
-  // Load file content into textarea
+  // Load file content into editor
   if (files[path] && files[path].file && files[path].file.contents) {
-    textareaEl.value = files[path].file.contents;
+    editor?.setValue(files[path].file.contents);
   }
 }
 
