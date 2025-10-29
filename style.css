@@ -61,12 +61,23 @@ textarea {
   grid-row: 1;
 }
 
-.editor {
+.editor-wrapper-container {
   grid-column: 2;
   grid-row: 1;
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
   border-radius: 6px;
   border: 1px solid #ccc;
+}
+
+.tab-bar-wrapper {
+  flex-shrink: 0;
+}
+
+.editor {
+  flex: 1;
+  overflow: hidden;
 }
 
 /* CodeMirror Editor Styles */
@@ -787,4 +798,130 @@ textarea {
 
 .file-tree-body::-webkit-scrollbar-thumb:hover {
   background: #999;
+}
+
+/* Tab Bar Styles */
+.tab-bar {
+  display: flex;
+  flex-direction: column;
+  background: #2d2d2d;
+  border-bottom: 1px solid #1e1e1e;
+}
+
+.tab-bar-tabs {
+  display: flex;
+  align-items: center;
+  overflow-x: auto;
+  overflow-y: hidden;
+  height: 36px;
+  padding: 0 4px;
+  gap: 2px;
+}
+
+.tab-bar-empty {
+  padding: 8px 16px;
+  color: #999;
+  font-size: 0.85em;
+  font-style: italic;
+}
+
+.tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid transparent;
+  border-radius: 4px 4px 0 0;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.2s;
+  white-space: nowrap;
+  min-width: 100px;
+  max-width: 200px;
+  position: relative;
+}
+
+.tab:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.tab-active {
+  background: #1e1e1e;
+  border-color: #007acc;
+  border-bottom-color: #1e1e1e;
+}
+
+.tab-icon {
+  font-size: 0.9em;
+  flex-shrink: 0;
+}
+
+.tab-name {
+  flex: 1;
+  font-size: 0.85em;
+  color: #ccc;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tab-active .tab-name {
+  color: #fff;
+  font-weight: 500;
+}
+
+.tab-dirty {
+  font-size: 1.5em;
+  color: #4ec9b0;
+  line-height: 0;
+  margin-left: -2px;
+  flex-shrink: 0;
+}
+
+.tab-close {
+  background: none;
+  border: none;
+  color: #999;
+  font-size: 1.4em;
+  line-height: 0;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 3px;
+  transition: all 0.2s;
+  flex-shrink: 0;
+  opacity: 0;
+  margin-left: 4px;
+}
+
+.tab:hover .tab-close {
+  opacity: 1;
+}
+
+.tab-close:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+}
+
+.tab-active .tab-close {
+  opacity: 1;
+  color: #ccc;
+}
+
+/* Tab bar scrollbar */
+.tab-bar-tabs::-webkit-scrollbar {
+  height: 3px;
+}
+
+.tab-bar-tabs::-webkit-scrollbar-track {
+  background: #2d2d2d;
+}
+
+.tab-bar-tabs::-webkit-scrollbar-thumb {
+  background: #555;
+  border-radius: 2px;
+}
+
+.tab-bar-tabs::-webkit-scrollbar-thumb:hover {
+  background: #666;
 }

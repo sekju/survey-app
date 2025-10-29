@@ -8,6 +8,7 @@ import { Terminal } from './src/components/Terminal.js';
 import { StatusBar } from './src/components/StatusBar.js';
 import { FileTree } from './src/components/FileTree.js';
 import { Editor } from './src/components/Editor.js';
+import { TabBar } from './src/components/TabBar.js';
 
 /** @type {import('@webcontainer/api').WebContainer}  */
 let webcontainerInstance;
@@ -17,6 +18,9 @@ let iframeEl = null;
 
 /** @type {Editor | null} */
 let editor = null;
+
+/** @type {TabBar | null} */
+let tabBar = null;
 
 /** @type {Terminal | null} */
 let terminal = null;
@@ -68,6 +72,17 @@ window.addEventListener('load', async () => {
       terminal.writeLine('WebContainer Terminal initialized', 'success');
     }
 
+    // Initialize TabBar
+    const tabBarContainer = document.querySelector('#tab-bar-container');
+    if (tabBarContainer) {
+      tabBar = new TabBar(tabBarContainer, {
+        tabs: [],
+        onTabChange: (path, content) => handleTabChange(path, content),
+        onTabClose: (path) => handleTabClose(path)
+      });
+      tabBar.init();
+    }
+
     // Get DOM elements after UI is created
     iframeEl = document.querySelector('iframe');
     const editorContainer = document.querySelector('.editor');
@@ -89,9 +104,17 @@ window.addEventListener('load', async () => {
       theme: 'oneDark',
       onChange: (content) => {
         debouncedWrite(content);
+        // Mark current tab as dirty
+        const activeTab = tabBar?.getActiveTab();
+        if (activeTab && content !== activeTab.content) {
+          tabBar?.setTabDirty(activeTab.path, true);
+        }
       }
     });
     editor.init();
+
+    // Open initial tab for index.js
+    tabBar?.addTab('index.js', 'index.js', files['index.js'].file.contents);
 
     // Boot WebContainer
     spinner.updateMessage('Booting WebContainer...');
@@ -232,7 +255,10 @@ function initializeUI() {
   appContainer.innerHTML = `
     <div class="container">
       <div class="file-tree-wrapper" id="file-tree-container"></div>
-      <div class="editor"></div>
+      <div class="editor-wrapper-container">
+        <div class="tab-bar-wrapper" id="tab-bar-container"></div>
+        <div class="editor"></div>
+      </div>
       <div class="preview">
         <iframe src="loading.html"></iframe>
       </div>
@@ -247,11 +273,39 @@ function initializeUI() {
  */
 function handleFileSelect(path) {
   console.log('File selected:', path);
+
+  // Get file info
+  const fileName = path.split('/').pop() || path;
+  const fileContent = files[path]?.file?.contents || '';
+
+  // Add or switch to tab
+  tabBar?.addTab(path, fileName, fileContent);
+}
+
+/**
+ * Handle tab change
+ * @param {string} path - Tab file path
+ * @param {string} content - Tab content
+ */
+function handleTabChange(path, content) {
+  console.log('Tab changed:', path);
   statusBar?.setCurrentFile(path);
 
-  // Load file content into editor
-  if (files[path] && files[path].file && files[path].file.contents) {
-    editor?.setValue(files[path].file.contents);
+  // Load content into editor
+  editor?.setValue(content);
+}
+
+/**
+ * Handle tab close
+ * @param {string|null} path - Closed tab path (null if all tabs closed)
+ */
+function handleTabClose(path) {
+  console.log('Tab closed:', path);
+
+  if (path === null) {
+    // All tabs closed - clear editor
+    editor?.setValue('');
+    statusBar?.setCurrentFile('');
   }
 }
 
