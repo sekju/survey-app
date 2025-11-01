@@ -1,120 +1,108 @@
-# WebContainer API Starter
+# WebContainer Live Coding Demo
 
-WebContainer API is a browser-based runtime for executing Node.js applications and operating system commands. It enables you to build applications that previously required a server running.
+Interaktywna aplikacja demonstracyjna pokazująca możliwości WebContainer API - uruchamianie Node.js i serwera Express bezpośrednio w przeglądarce.
 
-WebContainer API is perfect for building interactive coding experiences. Among its most common use cases are production-grade IDEs, programming tutorials, or employee onboarding platforms.
+## Czym jest ta aplikacja?
 
-## How To
+To demonstracja WebContainer API, która tworzy **środowisko kodowania na żywo w przeglądarce**. Aplikacja składa się z dwóch głównych części:
 
-For an up-to-date documentation, please refer to [our documentation](https://webcontainers.io).
+- **Edytor kodu** (textarea) - lewa strona ekranu
+- **Podgląd na żywo** (iframe) - prawa strona ekranu
 
-## Cross-Origin Isolation
+Edytor pozwala na modyfikowanie kodu Express.js w czasie rzeczywistym, a zmiany są natychmiast widoczne w podglądzie.
 
-WebContainer _requires_ [SharedArrayBuffer](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/SharedArrayBuffer) to function. In turn, this requires your website to be [cross-origin isolated](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/SharedArrayBuffer#security_requirements). Among other things, the root document must be served with:
+## Jak to działa?
+
+1. **Inicjalizacja WebContainer** - Aplikacja uruchamia WebContainer (Node.js w przeglądarce)
+2. **Montowanie systemu plików** - Tworzy wirtualny system plików z:
+   - `index.js` - serwer Express.js
+   - `package.json` - zależności (express, nodemon)
+3. **Instalacja zależności** - Automatycznie uruchamia `npm install` w kontenerze
+4. **Uruchomienie serwera** - Startuje Express.js przy użyciu `npm run start` (nodemon)
+5. **Live preview** - Wyświetla działający serwer w iframe
+6. **Edycja na żywo** - Każda zmiana w edytorze zapisuje plik `/index.js` w WebContainer
+
+## Aplikacja Express
+
+Domyślnie uruchamiana aplikacja Express to prosty serwer, który:
+- Nasłuchuje na porcie 3111
+- Odpowiada na żądania GET do `/` wiadomością: "Welcome to a WebContainers app! 🥳"
+- Używa nodemon do automatycznego przeładowania przy zmianach
+
+## Wymagania techniczne
+
+### Cross-Origin Isolation
+
+WebContainer wymaga [SharedArrayBuffer](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/SharedArrayBuffer), co z kolei wymaga [cross-origin isolation](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/SharedArrayBuffer#security_requirements).
+
+Serwer musi zwracać następujące nagłówki:
 
 ```
 Cross-Origin-Embedder-Policy: require-corp
 Cross-Origin-Opener-Policy: same-origin
 ```
 
-You can check [our article](https://blog.stackblitz.com/posts/cross-browser-with-coop-coep/) on the subject and our [docs on browser support](https://developer.stackblitz.com/docs/platform/browser-support) for more details.
+Więcej informacji:
+- [Artykuł o COOP/COEP](https://blog.stackblitz.com/posts/cross-browser-with-coop-coep/)
+- [Dokumentacja wsparcia przeglądarek](https://developer.stackblitz.com/docs/platform/browser-support)
 
-## Serve over HTTPS
+### HTTPS w produkcji
 
-Please note that your deployed page must be served over HTTPS. This is not necessary when developing locally, as `localhost` is exempt from some browser restrictions, but there is no way around it once you deploy to production.
+W środowisku produkcyjnym aplikacja **musi być serwowana przez HTTPS**. Localhost jest zwolniony z tego wymogu podczas rozwoju.
 
-## Demo
+## Uruchomienie projektu
 
-Check [the WebContainer API demo app](https://webcontainer.new).
+```bash
+# Instalacja zależności
+npm install
 
-Here's an example `main.ts` file:
+# Uruchomienie serwera deweloperskiego
+npm run dev
 
-```ts
-import { WebContainer } from "@webcontainer/api";
+# Build produkcyjny
+npm run build
 
-const files: FileSystemTree = {
-  "index.js": {
-    file: {
-      contents: "",
-    },
-  },
-};
-
-let webcontainer: WebContainer;
-
-// add a textarea (the editor) and an iframe (a preview window) to the document
-document.querySelector("#app").innerHTML = `
-  <div class="container">
-    <div class="editor">
-      <textarea>I am a textarea</textarea>
-    </div>
-    <div class="preview">
-      <iframe></iframe>
-    </div>
-  </div>
-`;
-
-// the editor
-const textarea = document.querySelector("textarea");
-
-// the preview window
-const iframe = document.querySelector("iframe");
-
-window.addEventListener("load", async () => {
-  textarea.value = files["index.js"].file.contents;
-
-  textarea.addEventListener("input", (event) => {
-    const content = event.currentTarget.value;
-    webcontainer.fs.writeFile("/index.js", content);
-  });
-
-  // call only once
-  webcontainer = await WebContainer.boot();
-
-  await webcontainer.mount(files);
-
-  const exitCode = await installDependencies();
-
-  if (exitCode !== 0) {
-    throw new Error("Installation failed");
-  }
-
-  startDevServer();
-});
-
-async function installDependencies() {
-  // install dependencies
-  const installProcess = await webcontainer.spawn("npm", ["install"]);
-
-  installProcess.output.pipeTo(
-    new WritableStream({
-      write(data) {
-        console.log(data);
-      },
-    })
-  );
-
-  // wait for install command to exit
-  return installProcess.exit;
-}
-
-async function startDevServer() {
-  // run `npm run start` to start the express app
-  await webcontainer.spawn("npm", ["run", "start"]);
-
-  // wait for `server-ready` event
-  webcontainer.on("server-ready", (port, url) => {
-    iframe.src = url;
-  });
-}
+# Podgląd builda
+npm run preview
 ```
+
+## Struktura projektu
+
+```
+.
+├── index.html      # Strona główna z headerem
+├── loading.html    # Ekran ładowania podczas instalacji npm
+├── main.js         # Główna logika WebContainer
+├── files.js        # Definicja systemu plików (index.js i package.json dla Express)
+├── style.css       # Style aplikacji (grid layout, dark textarea)
+├── package.json    # Zależności projektu (Vite, WebContainer API)
+└── vite.config.js  # Konfiguracja Vite
+```
+
+## Technologie
+
+- **WebContainer API** (v1.1.3) - Runtime Node.js w przeglądarce
+- **Vite** (v4.1.0) - Build tool i dev server
+- **Express.js** - Framework uruchamiany w WebContainer
+- **Nodemon** - Auto-reload serwera przy zmianach
 
 ## Troubleshooting
 
-Cookie blockers, either from third-party addons or built-in into the browser, can prevent WebContainer from running correctly. Check the `on('error')` event and our [docs](https://developer.stackblitz.com/docs/platform/third-party-blocker).
+### Cookie blockers
 
-To troubleshoot other problems, check the [Troubleshooting page](https://webcontainers.io/guides/troubleshooting) in our docs.
+Blokery ciasteczek (wtyczki lub wbudowane w przeglądarkę) mogą uniemożliwić działanie WebContainer. Sprawdź:
+- Event `on('error')` w WebContainer
+- [Dokumentację o blokerach](https://developer.stackblitz.com/docs/platform/third-party-blocker)
 
-# License
+### Inne problemy
+
+Zobacz [stronę Troubleshooting](https://webcontainers.io/guides/troubleshooting) w dokumentacji.
+
+## Dodatkowe zasoby
+
+- [Dokumentacja WebContainer API](https://webcontainers.io)
+- [WebContainer API demo](https://webcontainer.new)
+
+## Licencja
 
 Copyright 2023 StackBlitz, Inc.
